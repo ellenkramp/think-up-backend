@@ -1,4 +1,3 @@
-const cool = require('cool-ascii-faces')
 const express = require('express')
 const app = express();
 const path = require('path')
@@ -12,8 +11,27 @@ const pool = new Pool({
 });
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers",
+              "Origin, X-Requested-With, Content-Type, Accept, authorization");
+  res.header("Access-Control-Allow-Methods",
+              "*");
+  if ("OPTIONS" === req.method) {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+ });
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 app.get('/', async (req, res) => {
   try {
@@ -43,10 +61,11 @@ app.post('/', async (req, res) => {
   try {
     const client = await pool.connect();
     const postBody = req.body;
-    const { title, content, tag1, tag2, tag3, category } = postBody;
-    console.log(title);
-    const result = await client.query(`INSERT INTO posts (title, content, tag1, tag2, tag3, category)
-      VALUES ('${title}', '${content}', '${tag1}', '${tag2}', '${tag3}', '${category}');`);
+    const { title, content, tag1, tag2, tag3, category, username, img_id } = postBody;
+    const postBodyArray = [title, content, tag1, tag2, tag3, category, username, img_id];
+
+    const result = await client.query('INSERT INTO posts(title, content, tag1, tag2, tag3, category, uname, img_id) VALUES($1, $2, $3, $4, $5, $6, $7, $8)', postBodyArray)
+  
     res.send(result);
     client.release();
   } catch (err) {
